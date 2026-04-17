@@ -89,12 +89,12 @@ function CardImageWithFallback({ card }: { card: Card }) {
 
   return (
     <div className="animate-float">
-      <div className="relative w-[160px] h-[256px] rounded-2xl overflow-hidden group"
-        style={{ boxShadow: "0 0 40px #7c3aed55, 0 0 80px #7c3aed22" }}>
-        <img
-          src={src}
-          alt={card.name_ru}
-          className="w-full h-full object-cover"
+      <div className="relative w-[160px] h-[256px] rounded-2xl overflow-hidden"
+      style={{ boxShadow: "0 0 40px #7c3aed55, 0 0 80px #7c3aed22", background: "#0d0a1a" }}>
+      <img
+        src={src}
+        alt={card.name_ru}
+        className="w-full h-full object-contain"
           onError={(e) => {
             // Hide img and show SVG fallback
             const target = e.currentTarget;
