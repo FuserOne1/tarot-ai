@@ -122,7 +122,7 @@ export default function Home() {
   const [phase, setPhase] = useState<Phase>("input");
   const [drawnCards, setDrawnCards] = useState<Card[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
-  const [streamText, setStreamText] = useState("");
+  const streamAccum = useRef("");
   const [particles, setParticles] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [flipping, setFlipping] = useState(false);
@@ -146,7 +146,7 @@ export default function Home() {
     setFlipping(true);
     setPhase("drawing");
     setSections([]);
-    setStreamText("");
+    streamAccum.current = "";
 
     await new Promise(r => setTimeout(r, 800));
 
@@ -171,7 +171,6 @@ export default function Home() {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let accumulated = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -187,17 +186,15 @@ export default function Home() {
           try {
             const { delta } = JSON.parse(data);
             if (delta) {
-              accumulated += delta;
-              setStreamText(accumulated);
+              streamAccum.current += delta;
             }
           } catch { /* skip */ }
         }
       }
 
       // Parse final JSON
-      const parsed = parseJSON(accumulated);
+      const parsed = parseJSON(streamAccum.current);
       setSections(parsed);
-      setStreamText("");
       setPhase("result");
 
       // Save to history
@@ -234,7 +231,7 @@ export default function Home() {
     setPhase("input");
     setDrawnCards([]);
     setSections([]);
-    setStreamText("");
+    streamAccum.current = "";
     setSituation("");
   }
 
@@ -318,20 +315,27 @@ export default function Home() {
               </div>
             ))}
           </div>
-          {/* Streaming text preview */}
-          {streamText && (
-            <div className="w-full max-w-xl rounded-2xl bg-purple-950/30 border border-purple-800/20 p-5">
-              <p className="text-purple-200/70 text-sm leading-relaxed whitespace-pre-wrap">
-                {streamText.replace(/[{}"[\]]/g, "").replace(/sections|title|text/g, "").trim()}
-                <span className="inline-block w-1.5 h-4 bg-purple-400 ml-1 animate-pulse align-middle"/>
-              </p>
-            </div>
-          )}
-          {!streamText && (
-            <p className="text-purple-500 text-xs font-cinzel tracking-widest animate-pulse">
-              Карты читают твою судьбу...
-            </p>
-          )}
+          {/* Skeleton loader */}
+          <div className="w-full space-y-3">
+            {[
+              { accent: "#8b5cf6", gradient: "from-violet-900/60 to-purple-950/60", border: "border-violet-500/30", w: "w-1/3" },
+              { accent: "#3b82f6", gradient: "from-blue-900/50 to-indigo-950/60",   border: "border-blue-500/30",   w: "w-2/5" },
+              { accent: "#f59e0b", gradient: "from-amber-900/40 to-yellow-950/50",  border: "border-amber-500/30",  w: "w-1/4" },
+              { accent: "#10b981", gradient: "from-emerald-900/40 to-teal-950/50",  border: "border-emerald-500/30",w: "w-1/3" },
+            ].map((cfg, i) => (
+              <div key={i} className={`rounded-2xl bg-gradient-to-br ${cfg.gradient} border ${cfg.border} p-5 animate-pulse`}>
+                <div className={`h-3 rounded-full mb-3 ${cfg.w}`} style={{ background: cfg.accent + "40" }}/>
+                <div className="space-y-2">
+                  <div className="h-2.5 rounded-full w-full" style={{ background: cfg.accent + "25" }}/>
+                  <div className="h-2.5 rounded-full w-5/6"  style={{ background: cfg.accent + "20" }}/>
+                  <div className="h-2.5 rounded-full w-4/6"  style={{ background: cfg.accent + "18" }}/>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-purple-500 text-xs font-cinzel tracking-widest animate-pulse">
+            ✦ Карты читают твою судьбу... ✦
+          </p>
         </div>
       )}
 
