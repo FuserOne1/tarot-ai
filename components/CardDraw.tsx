@@ -13,9 +13,14 @@ interface Card {
   suit?: string;
 }
 
+interface Section {
+  title: string;
+  text: string;
+}
+
 interface Props {
   situation: string;
-  onReading: (card: Card, reading: string) => void;
+  onReading: (card: Card, sections: Section[]) => void;
   onLoading: (v: boolean) => void;
   isLoading: boolean;
 }
@@ -44,9 +49,9 @@ export default function CardDraw({ situation, onReading, onLoading, isLoading }:
         body: JSON.stringify({ situation, card }),
       });
       const data = await res.json();
-      onReading(card, data.reading ?? "Карты не дали ответа.");
+      onReading(card, data.sections ?? [{ title: "", text: "Карты не дали ответа." }]);
     } catch {
-      onReading(card, "Произошла ошибка. Попробуй ещё раз.");
+      onReading(card, [{ title: "", text: "Произошла ошибка. Попробуй ещё раз." }]);
     } finally {
       onLoading(false);
     }

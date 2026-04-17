@@ -13,20 +13,25 @@ interface Card {
   suit?: string;
 }
 
+interface Section {
+  title: string;
+  text: string;
+}
+
 export default function Home() {
   const [situation, setSituation] = useState("");
   const [drawnCard, setDrawnCard] = useState<Card | null>(null);
-  const [reading, setReading] = useState("");
+  const [sections, setSections] = useState<Section[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  function handleReading(card: Card, text: string) {
+  function handleReading(card: Card, secs: Section[]) {
     setDrawnCard(card);
-    setReading(text);
+    setSections(secs);
   }
 
   function handleReset() {
     setDrawnCard(null);
-    setReading("");
+    setSections([]);
     setSituation("");
   }
 
@@ -41,7 +46,6 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Main content */}
       {!drawnCard && !isLoading ? (
         <div className="w-full max-w-lg flex flex-col gap-6">
           <div className="flex flex-col gap-2">
@@ -77,7 +81,7 @@ export default function Home() {
           )}
 
           {drawnCard && (
-            <ReadingResult card={drawnCard} reading={reading} isLoading={isLoading}/>
+            <ReadingResult card={drawnCard} sections={sections} isLoading={isLoading} />
           )}
 
           {!isLoading && drawnCard && (

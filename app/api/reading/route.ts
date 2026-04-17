@@ -7,22 +7,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const prompt = `Ты — мудрый таролог с глубоким знанием символизма карт Таро. 
-Человек описал свою ситуацию и вытянул карту. Дай развёрнутую, персонализированную интерпретацию.
+  const prompt = `Ты — мудрый таролог. Человек описал ситуацию и вытянул карту таро.
 
-Ситуация человека: "${situation}"
-
-Вытянутая карта: ${card.name_ru} (${card.name})
-Ключевые темы карты: ${card.keywords}
+Ситуация: "${situation}"
+Карта: ${card.name_ru} (${card.name})
+Темы карты: ${card.keywords}
 Аркан: ${card.arcana === "major" ? "Старший аркан" : `Младший аркан, масть ${card.suit || ""}`}
 
-Структура ответа (используй эти разделы):
-1. **Послание карты** — что эта карта говорит именно в контексте данной ситуации (3-4 предложения)
-2. **Что сейчас происходит** — глубинный анализ текущего момента через призму карты (3-4 предложения)
-3. **Совет карты** — конкретные действия или изменение мышления (2-3 предложения)
-4. **Прогноз** — как может развиться ситуация, если следовать посланию карты (2-3 предложения)
+Ответь СТРОГО в формате JSON (без markdown, без \`\`\`, только чистый JSON):
+{
+  "sections": [
+    { "title": "Послание карты", "text": "..." },
+    { "title": "Что сейчас происходит", "text": "..." },
+    { "title": "Совет карты", "text": "..." },
+    { "title": "Прогноз", "text": "..." }
+  ]
+}
 
-Пиши тепло, мудро, без клише. Обращайся к человеку на "ты". Ответ на русском языке.`;
+Каждый text — 3-4 предложения. Тепло, мудро, на "ты", на русском языке. Никаких звёздочек, решёток и markdown.`;
 
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -37,7 +39,8 @@ export async function POST(req: NextRequest) {
         model: "google/gemini-3-flash-preview",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.85,
-        max_tokens: 1000,
+        max_tokens: 1200,
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -48,9 +51,29 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
-    const reading = data.choices?.[0]?.message?.content ?? "Карты молчат...";
+    const raw = data.choices?.[0]?.message?.content ?? "{}";
 
-    return NextResponse.json({ reading });
+    // Parse JSON from model
+    let sections: { title: string; text: string }[] = [];
+    try {
+      const parsed = JSON.parse(raw);
+      sections = parsed.sections ?? [];
+    } catch {
+      // Fallback: extract JSON from possible wrapper text
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          const parsed = JSON.parse(match[0]);
+          sections = parsed.sections ?? [];
+        } catch { /* ignore */ }
+      }
+    }
+
+    if (!sections.length) {
+      sections = [{ title: "", text: raw.replace(/[*#`]/g, "").trim() }];
+    }
+
+    return NextResponse.json({ sections });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

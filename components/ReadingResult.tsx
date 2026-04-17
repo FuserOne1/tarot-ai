@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import TarotCardSvg from "./TarotCardSvg";
 
 interface Card {
@@ -11,64 +12,115 @@ interface Card {
   suit?: string;
 }
 
+interface Section {
+  title: string;
+  text: string;
+}
+
 interface Props {
   card: Card;
-  reading: string;
+  sections: Section[];
   isLoading: boolean;
 }
 
-// Strip all markdown formatting
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/#{1,6}\s*/g, "")          // ### headers
-    .replace(/\*\*(.+?)\*\*/g, "$1")    // **bold**
-    .replace(/\*(.+?)\*/g, "$1")        // *italic*
-    .replace(/__(.+?)__/g, "$1")        // __bold__
-    .replace(/_(.+?)_/g, "$1")          // _italic_
-    .replace(/`(.+?)`/g, "$1")          // `code`
-    .replace(/^\s*[-*+]\s+/gm, "")      // bullet points
-    .replace(/^\s*\d+\.\s+/gm, "")      // numbered lists
-    .trim();
-}
+// Section visual config
+const SECTION_CONFIG = [
+  {
+    icon: "🔮",
+    gradient: "from-violet-900/60 to-purple-950/60",
+    border: "border-violet-500/30",
+    titleColor: "text-violet-300",
+    glow: "shadow-violet-900/30",
+    accent: "#8b5cf6",
+  },
+  {
+    icon: "🌊",
+    gradient: "from-blue-900/50 to-indigo-950/60",
+    border: "border-blue-500/30",
+    titleColor: "text-blue-300",
+    glow: "shadow-blue-900/30",
+    accent: "#3b82f6",
+  },
+  {
+    icon: "⭐",
+    gradient: "from-amber-900/40 to-yellow-950/50",
+    border: "border-amber-500/30",
+    titleColor: "text-amber-300",
+    glow: "shadow-amber-900/30",
+    accent: "#f59e0b",
+  },
+  {
+    icon: "🌟",
+    gradient: "from-emerald-900/40 to-teal-950/50",
+    border: "border-emerald-500/30",
+    titleColor: "text-emerald-300",
+    glow: "shadow-emerald-900/30",
+    accent: "#10b981",
+  },
+];
 
-// Parse into sections by numbered pattern or bold headers
-function parseSections(raw: string): { title: string; content: string }[] {
-  const cleaned = stripMarkdown(raw);
-
-  // Try to split by numbered sections like "1. Title\nContent"
-  const numbered = cleaned.split(/\n(?=\d+\.\s)/);
-  if (numbered.length > 1) {
-    return numbered.map((block) => {
-      const match = block.match(/^\d+\.\s+(.+?)\n([\s\S]+)$/);
-      if (match) return { title: match[1].trim(), content: match[2].trim() };
-      return { title: "", content: block.trim() };
-    }).filter(s => s.content);
-  }
-
-  // Try to split by double newlines as paragraphs
-  const paras = cleaned.split(/\n{2,}/).filter(Boolean);
-  if (paras.length > 1) {
-    return paras.map((p) => ({ title: "", content: p.trim() }));
-  }
-
-  return [{ title: "", content: cleaned }];
-}
-
-const SECTION_ICONS = ["🔮", "🌊", "⭐", "🌟", "✦", "🌙"];
-
-export default function ReadingResult({ card, reading, isLoading }: Props) {
-  const sections = parseSections(reading);
+function CardImage({ card }: { card: Card }) {
+  const slug = card.name.toLowerCase().replace(/\s+/g, "-");
+  const src = `/cards/${slug}.jpg`;
 
   return (
-    <div className="w-full max-w-xl mx-auto mt-6 animate-fade-in">
-      {/* Card + name header */}
-      <div className="flex flex-col items-center gap-4 mb-8">
-        <div className="animate-float">
+    <div className="relative w-[160px] h-[256px] rounded-2xl overflow-hidden"
+      style={{ boxShadow: "0 0 40px #7c3aed55, 0 0 80px #7c3aed22" }}>
+      <Image
+        src={src}
+        alt={card.name_ru}
+        fill
+        className="object-cover"
+        onError={() => {/* fallback handled below */}}
+        unoptimized
+      />
+    </div>
+  );
+}
+
+function CardDisplay({ card }: { card: Card }) {
+  // Check if image exists by trying to render it with error fallback
+  return <CardImageWithFallback card={card} />;
+}
+
+function CardImageWithFallback({ card }: { card: Card }) {
+  const slug = card.name.toLowerCase().replace(/\s+/g, "-");
+  const src = `/cards/${slug}.jpg`;
+
+  return (
+    <div className="animate-float">
+      <div className="relative w-[160px] h-[256px] rounded-2xl overflow-hidden group"
+        style={{ boxShadow: "0 0 40px #7c3aed55, 0 0 80px #7c3aed22" }}>
+        <img
+          src={src}
+          alt={card.name_ru}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // Hide img and show SVG fallback
+            const target = e.currentTarget;
+            target.style.display = "none";
+            const fallback = target.nextElementSibling as HTMLElement;
+            if (fallback) fallback.style.display = "flex";
+          }}
+        />
+        {/* SVG fallback — hidden by default, shown on img error */}
+        <div style={{ display: "none" }} className="absolute inset-0 items-center justify-center">
           <TarotCardSvg card={card} size="lg" />
         </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ReadingResult({ card, sections, isLoading }: Props) {
+  return (
+    <div className="w-full max-w-xl mx-auto mt-4 animate-fade-in">
+      {/* Card display */}
+      <div className="flex flex-col items-center gap-4 mb-8">
+        <CardDisplay card={card} />
         <div className="text-center">
           <h2 className="font-cinzel text-2xl shimmer-text tracking-wide">{card.name_ru}</h2>
-          <p className="text-purple-400 text-xs mt-1 tracking-widest uppercase font-cinzel">{card.name}</p>
+          <p className="text-purple-500 text-xs mt-1 tracking-widest uppercase font-cinzel">{card.name}</p>
           <div className="flex flex-wrap justify-center gap-1 mt-3 max-w-xs mx-auto">
             {card.keywords.split(", ").map((kw) => (
               <span key={kw}
@@ -81,43 +133,50 @@ export default function ReadingResult({ card, reading, isLoading }: Props) {
       </div>
 
       {/* Divider */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-600/40 to-transparent"/>
-        <span className="text-yellow-500/60 text-xs font-cinzel tracking-widest">ПОСЛАНИЕ</span>
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-600/40 to-transparent"/>
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-600/50 to-transparent" />
+        <span className="text-yellow-500/70 text-xs font-cinzel tracking-[0.3em]">ПОСЛАНИЕ КАРТЫ</span>
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-600/50 to-transparent" />
       </div>
 
-      {/* Reading */}
+      {/* Sections */}
       {isLoading ? (
         <div className="space-y-3">
-          {[1,2,3,4].map((i) => (
-            <div key={i} className="rounded-xl bg-purple-950/30 border border-purple-800/20 p-4 animate-pulse">
-              <div className="h-3 bg-purple-800/30 rounded w-1/3 mb-3"/>
+          {SECTION_CONFIG.map((cfg, i) => (
+            <div key={i}
+              className={`rounded-2xl bg-gradient-to-br ${cfg.gradient} border ${cfg.border} p-5 animate-pulse`}>
+              <div className="h-3 rounded w-1/3 mb-3" style={{ background: cfg.accent + "33" }} />
               <div className="space-y-2">
-                <div className="h-2.5 bg-purple-800/20 rounded w-full"/>
-                <div className="h-2.5 bg-purple-800/20 rounded w-5/6"/>
-                <div className="h-2.5 bg-purple-800/20 rounded w-4/6"/>
+                <div className="h-2.5 rounded w-full"   style={{ background: cfg.accent + "22" }} />
+                <div className="h-2.5 rounded w-5/6"   style={{ background: cfg.accent + "22" }} />
+                <div className="h-2.5 rounded w-4/6"   style={{ background: cfg.accent + "22" }} />
               </div>
             </div>
           ))}
         </div>
       ) : (
         <div className="space-y-3">
-          {sections.map((section, i) => (
-            <div key={i}
-              className="rounded-xl bg-purple-950/25 border border-purple-800/25 p-4
-                hover:bg-purple-950/40 hover:border-purple-700/40 transition-all duration-200">
-              {section.title && (
-                <h3 className="text-yellow-400/80 text-xs font-cinzel tracking-widest uppercase mb-2 flex items-center gap-2">
-                  <span>{SECTION_ICONS[i % SECTION_ICONS.length]}</span>
-                  {section.title}
-                </h3>
-              )}
-              <p className="text-purple-100/80 text-sm leading-relaxed">
-                {section.content}
-              </p>
-            </div>
-          ))}
+          {sections.map((section, i) => {
+            const cfg = SECTION_CONFIG[i % SECTION_CONFIG.length];
+            return (
+              <div key={i}
+                className={`rounded-2xl bg-gradient-to-br ${cfg.gradient} border ${cfg.border} p-5
+                  shadow-lg ${cfg.glow} transition-all duration-200 hover:scale-[1.01]`}>
+                {section.title && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">{cfg.icon}</span>
+                    <h3 className={`font-cinzel text-xs tracking-widest uppercase ${cfg.titleColor}`}>
+                      {section.title}
+                    </h3>
+                    <div className="flex-1 h-px ml-1" style={{ background: cfg.accent + "33" }} />
+                  </div>
+                )}
+                <p className="text-purple-100/85 text-sm leading-relaxed">
+                  {section.text}
+                </p>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
