@@ -29,7 +29,7 @@ type Phase = "input" | "drawing" | "result";
 
 function CardBack({ flipping }: { flipping?: boolean }) {
   return (
-    <svg width="120" height="192" viewBox="0 0 160 256" xmlns="http://www.w3.org/2000/svg"
+    <svg width="160" height="256" viewBox="0 0 160 256" xmlns="http://www.w3.org/2000/svg"
       style={{ filter: "drop-shadow(0 0 10px #4c1d9555)" }}>
       <defs>
         <radialGradient id="bg2" cx="50%" cy="50%" r="60%">
@@ -59,7 +59,7 @@ function CardBack({ flipping }: { flipping?: boolean }) {
 function CardFace({ card }: { card: Card }) {
   const slug = card.name.toLowerCase().replace(/\s+/g, "-");
   return (
-    <div className="relative w-[120px] h-[192px] rounded-xl overflow-hidden animate-card-reveal"
+    <div className="relative w-[160px] h-[256px] rounded-xl overflow-hidden animate-card-reveal"
       style={{ boxShadow: "0 0 30px #7c3aed55", background: "#0d0a1a" }}>
       <img src={`/cards/${slug}.jpg`} alt={card.name_ru} className="w-full h-full object-contain"/>
     </div>

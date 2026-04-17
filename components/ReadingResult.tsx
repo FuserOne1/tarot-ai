@@ -28,15 +28,17 @@ const SECTION_CONFIG = [
 
 const SPREAD_LABELS = ["Прошлое", "Настоящее", "Будущее"];
 
-function CardImg({ card, label }: { card: Card; label?: string }) {
+function CardImg({ card, label, spread }: { card: Card; label?: string; spread: "one" | "three" }) {
   const slug = card.name.toLowerCase().replace(/\s+/g, "-");
+  const w = spread === "one" ? "w-[160px]" : "w-[110px]";
+  const h = spread === "one" ? "h-[256px]" : "h-[176px]";
   return (
     <div className="flex flex-col items-center gap-2">
       {label && (
         <span className="text-purple-500 text-xs font-cinzel tracking-widest uppercase">{label}</span>
       )}
-      <div className="relative w-[100px] h-[160px] rounded-xl overflow-hidden animate-card-reveal animate-float"
-        style={{ boxShadow: "0 0 24px #7c3aed44", background: "#0d0a1a" }}>
+      <div className={`relative ${w} ${h} rounded-xl overflow-hidden animate-card-reveal animate-float`}
+        style={{ boxShadow: "0 0 28px #7c3aed55", background: "#0d0a1a" }}>
         <img
           src={`/cards/${slug}.jpg`}
           alt={card.name_ru}
@@ -64,9 +66,7 @@ export default function ReadingResult({ cards, sections, spread }: Props) {
       {/* Cards row */}
       <div className={`flex justify-center gap-4 mb-6 ${spread === "one" ? "" : "gap-3"}`}>
         {cards.map((card, i) => (
-          <CardImg
-            key={card.id}
-            card={card}
+          <CardImg key={card.id} card={card} spread={spread}
             label={spread === "three" ? SPREAD_LABELS[i] : undefined}
           />
         ))}
