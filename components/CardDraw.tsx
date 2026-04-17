@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import cards from "@/data/cards.json";
+import TarotCardSvg from "./TarotCardSvg";
 
 interface Card {
   id: number;
@@ -19,26 +20,17 @@ interface Props {
   isLoading: boolean;
 }
 
-const SUIT_SYMBOLS: Record<string, string> = {
-  wands: "🔥",
-  cups: "💧",
-  swords: "⚔️",
-  pentacles: "🌿",
-};
-
-const MAJOR_SYMBOLS = ["🌟", "🌙", "☀️", "⭐", "✨", "🔮", "🌠", "💫"];
-
 export default function CardDraw({ situation, onReading, onLoading, isLoading }: Props) {
   const [flipping, setFlipping] = useState(false);
   const [drawnCard, setDrawnCard] = useState<Card | null>(null);
 
   async function drawCard() {
-    if (!situation.trim() || isLoading) return;
+    if (!situation.trim() || isLoading || flipping) return;
 
     setFlipping(true);
     setDrawnCard(null);
 
-    await new Promise((r) => setTimeout(r, 900));
+    await new Promise((r) => setTimeout(r, 700));
 
     const card = cards[Math.floor(Math.random() * cards.length)] as Card;
     setDrawnCard(card);
@@ -60,62 +52,62 @@ export default function CardDraw({ situation, onReading, onLoading, isLoading }:
     }
   }
 
-  function getCardSymbol(card: Card) {
-    if (card.arcana === "major") {
-      return MAJOR_SYMBOLS[card.id % MAJOR_SYMBOLS.length];
-    }
-    return SUIT_SYMBOLS[card.suit ?? ""] ?? "🃏";
-  }
-
   return (
     <div className="flex flex-col items-center gap-6">
-      {/* Card visual */}
-      <div className="relative w-40 h-64 perspective-1000">
-        <div
-          className={`w-full h-full transition-all duration-700 ${
-            flipping ? "scale-95 opacity-60" : "scale-100 opacity-100"
-          }`}
-          style={{ transformStyle: "preserve-3d" }}
-        >
-          {drawnCard ? (
-            <div className="w-full h-full rounded-2xl border-2 border-yellow-400/60 bg-gradient-to-b from-purple-900 via-indigo-900 to-purple-950 flex flex-col items-center justify-center gap-3 shadow-2xl shadow-purple-900/50 animate-float">
-              <div className="text-5xl">{getCardSymbol(drawnCard)}</div>
-              <div className="text-yellow-300 font-serif text-center text-sm px-3 leading-tight">
-                {drawnCard.name_ru}
-              </div>
-              <div className="text-purple-300 text-xs text-center px-3 opacity-70">
-                {drawnCard.name}
-              </div>
-              <div className="w-16 h-px bg-yellow-400/40 mt-1" />
-              <div className="text-purple-200 text-xs text-center px-3 opacity-60 leading-tight">
-                {drawnCard.arcana === "major" ? "Старший аркан" : `Масть ${drawnCard.suit}`}
-              </div>
-            </div>
-          ) : (
-            <div
-              className={`w-full h-full rounded-2xl border-2 border-purple-500/40 bg-gradient-to-b from-indigo-950 via-purple-950 to-indigo-950 flex items-center justify-center shadow-2xl shadow-purple-900/30 ${
-                flipping ? "animate-pulse" : ""
-              }`}
-            >
-              <div className="text-6xl opacity-40">🔮</div>
-            </div>
-          )}
-        </div>
+      {/* Card */}
+      <div className="relative" style={{ perspective: "800px" }}>
+        {drawnCard && !flipping ? (
+          <div className="animate-card-reveal animate-float">
+            <TarotCardSvg card={drawnCard} size="lg" />
+          </div>
+        ) : (
+          <div className={`transition-all duration-300 ${flipping ? "scale-90 opacity-50" : "opacity-100"}`}>
+            {/* Card back */}
+            <svg width="160" height="256" viewBox="0 0 160 256" xmlns="http://www.w3.org/2000/svg"
+              style={{ filter: "drop-shadow(0 0 12px #4c1d9555)" }}>
+              <defs>
+                <radialGradient id="back-glow" cx="50%" cy="50%" r="60%">
+                  <stop offset="0%" stopColor="#4c1d95" stopOpacity="0.3"/>
+                  <stop offset="100%" stopColor="#0d0a1a" stopOpacity="0"/>
+                </radialGradient>
+                <pattern id="back-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <circle cx="10" cy="10" r="1" fill="#4c1d95" opacity="0.3"/>
+                  <path d="M0,10 L10,0 L20,10 L10,20 Z" fill="none" stroke="#4c1d95" strokeWidth="0.3" opacity="0.2"/>
+                </pattern>
+              </defs>
+              <rect x="2" y="2" width="156" height="252" rx="12" fill="#0f0a2a"/>
+              <rect x="2" y="2" width="156" height="252" rx="12" fill="url(#back-pattern)"/>
+              <rect x="2" y="2" width="156" height="252" rx="12" fill="url(#back-glow)"/>
+              <rect x="2" y="2" width="156" height="252" rx="12" fill="none" stroke="#4c1d95" strokeWidth="1.5" opacity="0.6"/>
+              <rect x="10" y="10" width="140" height="236" rx="8" fill="none" stroke="#4c1d95" strokeWidth="0.5" opacity="0.3"/>
+              {/* Center ornament */}
+              <circle cx="80" cy="128" r="40" fill="none" stroke="#7c3aed" strokeWidth="0.8" opacity="0.4"/>
+              <circle cx="80" cy="128" r="28" fill="none" stroke="#a855f7" strokeWidth="0.5" opacity="0.3"/>
+              <circle cx="80" cy="128" r="6" fill="#7c3aed" opacity={flipping ? "0.8" : "0.5"}
+                style={flipping ? { animation: "pulse 0.5s ease-in-out infinite" } : {}}/>
+              {/* Star of David */}
+              <polygon points="80,92 90,110 70,110" fill="none" stroke="#a855f7" strokeWidth="0.8" opacity="0.4"/>
+              <polygon points="80,164 90,146 70,146" fill="none" stroke="#a855f7" strokeWidth="0.8" opacity="0.4"/>
+              <text x="80" y="220" textAnchor="middle" fontSize="10" fill="#7c3aed" opacity="0.5"
+                fontFamily="serif" letterSpacing="3">✦ ТАРО ✦</text>
+            </svg>
+          </div>
+        )}
       </div>
 
-      {/* Draw button */}
+      {/* Button */}
       <button
         onClick={drawCard}
         disabled={!situation.trim() || isLoading || flipping}
-        className="relative px-8 py-3 rounded-full font-serif text-base font-medium transition-all duration-300
-          bg-gradient-to-r from-purple-700 via-violet-600 to-purple-700
-          hover:from-purple-600 hover:via-violet-500 hover:to-purple-600
-          text-yellow-200 border border-yellow-400/30
+        className="px-8 py-3 rounded-full text-sm font-cinzel tracking-widest transition-all duration-300
+          bg-gradient-to-r from-purple-800 via-violet-700 to-purple-800
+          hover:from-purple-700 hover:via-violet-600 hover:to-purple-700
+          text-yellow-200 border border-yellow-500/20
           disabled:opacity-40 disabled:cursor-not-allowed
-          shadow-lg shadow-purple-900/50 hover:shadow-purple-700/60
-          hover:scale-105 active:scale-95"
+          shadow-lg shadow-purple-900/60 hover:shadow-purple-700/70
+          hover:scale-105 active:scale-95 uppercase"
       >
-        {flipping ? "Карты перемешиваются..." : isLoading ? "Читаю карту..." : "✨ Вытянуть карту"}
+        {flipping ? "Перемешиваю..." : isLoading ? "Читаю карту..." : "✦ Вытянуть карту ✦"}
       </button>
     </div>
   );
