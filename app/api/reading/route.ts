@@ -7,16 +7,61 @@ interface Card {
   arcana: string;
   keywords: string;
   suit?: string;
+  reversed?: boolean;
 }
 
-function buildPrompt(situation: string, cards: Card[], spread: "one" | "three") {
+function buildPrompt(situation: string, cards: Card[], spread: string) {
+  const cardDesc = (c: Card) =>
+    `${c.name_ru}${c.reversed ? " (ПЕРЕВЁРНУТАЯ)" : ""} — темы: ${c.keywords}${c.reversed ? ". Перевёрнутое положение усиливает теневые аспекты карты" : ""}`;
+
+  const affirmationNote = `\n  "affirmation": "Одна короткая аффирмация или слово силы для человека (до 10 слов)"`;
+
+  if (spread === "day") {
+    const card = cards[0];
+    return `Ты — мудрый таролог. Человек вытянул карту дня.
+
+Карта дня: ${cardDesc(card)}
+Аркан: ${card.arcana === "major" ? "Старший аркан" : `Младший аркан, масть ${card.suit || ""}`}
+
+Ответь СТРОГО в формате JSON (только чистый JSON, без markdown):
+{
+  "sections": [
+    { "title": "Энергия дня", "text": "Что несёт этот день, 2-3 предложения" },
+    { "title": "На что обратить внимание", "text": "Конкретный совет на день, 2-3 предложения" },
+    { "title": "Возможности дня", "text": "Что можно использовать сегодня, 2 предложения" }
+  ],${affirmationNote}
+}
+
+Тепло, мудро, на "ты", на русском. Никаких звёздочек и решёток.`;
+  }
+
+  if (spread === "compatibility") {
+    const [name1, name2] = situation.split("|||");
+    const card = cards[0];
+    return `Ты — мудрый таролог. Человек спрашивает о совместимости двух людей.
+
+Имена: ${name1.trim()} и ${name2.trim()}
+Карта расклада: ${cardDesc(card)}
+
+Ответь СТРОГО в формате JSON (только чистый JSON, без markdown):
+{
+  "sections": [
+    { "title": "Энергия союза", "text": "Что объединяет этих людей, 3 предложения" },
+    { "title": "Вызовы и уроки", "text": "Что нужно преодолеть вместе, 2-3 предложения" },
+    { "title": "Потенциал отношений", "text": "Куда могут прийти эти отношения, 2-3 предложения" },
+    { "title": "Совет", "text": "Что важно помнить обоим, 2 предложения" }
+  ],${affirmationNote}
+}
+
+Тепло, мудро, на "ты", на русском. Никаких звёздочек и решёток.`;
+  }
+
   if (spread === "one") {
     const card = cards[0];
     return `Ты — мудрый таролог. Человек описал ситуацию и вытянул карту таро.
 
 Ситуация: "${situation}"
-Карта: ${card.name_ru} (${card.name})
-Темы карты: ${card.keywords}
+Карта: ${cardDesc(card)}
 Аркан: ${card.arcana === "major" ? "Старший аркан" : `Младший аркан, масть ${card.suit || ""}`}
 
 Ответь СТРОГО в формате JSON (только чистый JSON, без markdown):
@@ -26,7 +71,7 @@ function buildPrompt(situation: string, cards: Card[], spread: "one" | "three") 
     { "title": "Что сейчас происходит", "text": "3-4 предложения" },
     { "title": "Совет карты", "text": "2-3 предложения" },
     { "title": "Прогноз", "text": "2-3 предложения" }
-  ]
+  ],${affirmationNote}
 }
 
 Тепло, мудро, на "ты", на русском. Никаких звёздочек и решёток.`;
@@ -37,19 +82,18 @@ function buildPrompt(situation: string, cards: Card[], spread: "one" | "three") 
   return `Ты — мудрый таролог. Человек описал ситуацию и вытянул расклад из трёх карт.
 
 Ситуация: "${situation}"
-
-Карта 1 — ПРОШЛОЕ: ${past.name_ru} (${past.name}), темы: ${past.keywords}
-Карта 2 — НАСТОЯЩЕЕ: ${present.name_ru} (${present.name}), темы: ${present.keywords}
-Карта 3 — БУДУЩЕЕ: ${future.name_ru} (${future.name}), темы: ${future.keywords}
+Карта 1 — ПРОШЛОЕ: ${cardDesc(past)}
+Карта 2 — НАСТОЯЩЕЕ: ${cardDesc(present)}
+Карта 3 — БУДУЩЕЕ: ${cardDesc(future)}
 
 Ответь СТРОГО в формате JSON (только чистый JSON, без markdown):
 {
   "sections": [
-    { "title": "Прошлое — ${past.name_ru}", "text": "Что привело к этой ситуации, 2-3 предложения" },
-    { "title": "Настоящее — ${present.name_ru}", "text": "Что происходит сейчас, 3-4 предложения" },
-    { "title": "Будущее — ${future.name_ru}", "text": "Куда ведёт этот путь, 2-3 предложения" },
-    { "title": "Общий совет", "text": "Что делать с учётом всех трёх карт, 2-3 предложения" }
-  ]
+    { "title": "Прошлое — ${past.name_ru}", "text": "2-3 предложения" },
+    { "title": "Настоящее — ${present.name_ru}", "text": "3-4 предложения" },
+    { "title": "Будущее — ${future.name_ru}", "text": "2-3 предложения" },
+    { "title": "Общий совет", "text": "2-3 предложения" }
+  ],${affirmationNote}
 }
 
 Тепло, мудро, на "ты", на русском. Никаких звёздочек и решёток.`;
@@ -58,11 +102,11 @@ function buildPrompt(situation: string, cards: Card[], spread: "one" | "three") 
 export async function POST(req: NextRequest) {
   const { situation, cards, spread } = await req.json();
 
-  if (!situation || !cards?.length) {
+  if (!cards?.length) {
     return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
   }
 
-  const prompt = buildPrompt(situation, cards, spread ?? "one");
+  const prompt = buildPrompt(situation ?? "", cards, spread ?? "one");
 
   const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -87,7 +131,6 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: "AI service error" }), { status: 500 });
   }
 
-  // Stream SSE back to client
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
@@ -114,10 +157,8 @@ export async function POST(req: NextRequest) {
           try {
             const json = JSON.parse(data);
             const delta = json.choices?.[0]?.delta?.content ?? "";
-            if (delta) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta })}\n\n`));
-            }
-          } catch { /* skip malformed */ }
+            if (delta) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta })}\n\n`));
+          } catch { /* skip */ }
         }
       }
       controller.close();

@@ -16,6 +16,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://tarot-ai.vercel.app"),
   title: "Таро AI — Расклад с искусственным интеллектом",
   description: "Опиши свою ситуацию и получи персонализированное таро-чтение с интерпретацией от ИИ",
   manifest: "/manifest.json",
@@ -30,6 +31,19 @@ export const metadata: Metadata = {
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
     apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "Таро AI — Расклад с искусственным интеллектом",
+    description: "Опиши свою ситуацию и получи персонализированное таро-чтение от ИИ",
+    type: "website",
+    locale: "ru_RU",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Таро AI" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Таро AI",
+    description: "Персонализированные таро-расклады с ИИ",
+    images: ["/og-image.png"],
   },
 };
 
